@@ -1,33 +1,38 @@
 pipeline {
     agent any
-
+    
+    environment {
+        GITHUB_CREDENTIALS = credentials('github-token')
+    }
+    
     stages {
-
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'github-token',
+                    url: 'https://github.com/mavoungoumalelenaomie/student-app-pipeline.git'
+            }
+        }
+        
         stage('Check project') {
             steps {
-                dir('/var/jenkins_home/student-app') {
-                    sh 'ls'
-                }
+                sh 'ls -la'
             }
         }
-
+        
         stage('Build Docker Image') {
             steps {
-                dir('/var/jenkins_home/student-app') {
-                    sh 'docker build -t student-app ./app'
-                }
+                sh 'docker build -t student-app .'
             }
         }
-
+        
         stage('Deploy') {
             steps {
-                dir('/var/jenkins_home/student-app') {
-                    sh 'docker compose down || true'
-                    sh 'docker compose up -d --build'
-                }
+                sh 'docker compose down || true'
+                sh 'docker compose up -d --build'
             }
         }
-
+        
         stage('Check Containers') {
             steps {
                 sh 'docker ps'
