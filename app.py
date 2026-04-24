@@ -1,8 +1,9 @@
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, jsonify, request, render_template_string, Response
 from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
-metrics = PrometheusMetrics(app)
+metrics = PrometheusMetrics(app, path=None)
 
 students = [
     {"id": 1, "nom": "Mvounga", "prenom": "Jean", "note": 15.5},
@@ -44,7 +45,6 @@ HTML = '''
         }
         .success { background: rgba(255, 105, 180, 0.3); color: #ff69b4; border: 1px solid #ff69b4; }
         .error { background: rgba(255, 0, 0, 0.2); color: #ff6b6b; border: 1px solid #ff6b6b; }
-
         .form-container {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(10px);
@@ -53,11 +53,7 @@ HTML = '''
             border-radius: 16px;
             margin-bottom: 25px;
         }
-        .form-container h3 {
-            color: #ff69b4;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-        }
+        .form-container h3 { color: #ff69b4; margin-bottom: 15px; font-size: 1.2em; }
         .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         input[type="text"], input[type="number"] {
             padding: 10px 15px;
@@ -71,7 +67,6 @@ HTML = '''
         }
         input::placeholder { color: rgba(255, 255, 255, 0.5); }
         input:focus { border-color: #ff69b4; box-shadow: 0 0 10px rgba(255, 105, 180, 0.4); }
-
         button {
             padding: 10px 20px;
             border: none;
@@ -82,29 +77,10 @@ HTML = '''
             transition: transform 0.2s, box-shadow 0.2s;
         }
         button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-
-        .btn-save {
-            background: linear-gradient(135deg, #ff69b4, #9b30ff);
-            color: white;
-        }
-        .btn-reset {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        .btn-edit {
-            background: linear-gradient(135deg, #a855f7, #7c3aed);
-            color: white;
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-        .btn-delete {
-            background: linear-gradient(135deg, #ff69b4, #e91e8c);
-            color: white;
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
+        .btn-save { background: linear-gradient(135deg, #ff69b4, #9b30ff); color: white; }
+        .btn-reset { background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+        .btn-edit { background: linear-gradient(135deg, #a855f7, #7c3aed); color: white; padding: 6px 12px; font-size: 12px; }
+        .btn-delete { background: linear-gradient(135deg, #ff69b4, #e91e8c); color: white; padding: 6px 12px; font-size: 12px; }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -114,29 +90,10 @@ HTML = '''
             overflow: hidden;
             border: 1px solid rgba(255, 105, 180, 0.2);
         }
-        th {
-            background: linear-gradient(135deg, #9b30ff, #ff69b4);
-            color: white;
-            padding: 14px;
-            text-align: left;
-            font-size: 14px;
-            letter-spacing: 1px;
-        }
-        td {
-            padding: 12px 14px;
-            color: rgba(255, 255, 255, 0.9);
-            border-bottom: 1px solid rgba(255, 105, 180, 0.1);
-            font-size: 14px;
-        }
+        th { background: linear-gradient(135deg, #9b30ff, #ff69b4); color: white; padding: 14px; text-align: left; font-size: 14px; letter-spacing: 1px; }
+        td { padding: 12px 14px; color: rgba(255, 255, 255, 0.9); border-bottom: 1px solid rgba(255, 105, 180, 0.1); font-size: 14px; }
         tr:hover td { background: rgba(255, 105, 180, 0.1); }
-
-        .note-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 13px;
-        }
+        .note-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-weight: bold; font-size: 13px; }
         .note-high { background: rgba(100, 255, 150, 0.2); color: #64ff96; }
         .note-mid { background: rgba(255, 200, 0, 0.2); color: #ffc800; }
         .note-low { background: rgba(255, 100, 100, 0.2); color: #ff6464; }
@@ -146,7 +103,6 @@ HTML = '''
 <div class="container">
     <h1>🎓 Gestion des Étudiants — INPTIC</h1>
     <div id="message"></div>
-
     <div class="form-container">
         <h3>✨ Ajouter / Modifier un étudiant</h3>
         <input type="hidden" id="student-id">
@@ -158,21 +114,15 @@ HTML = '''
             <button class="btn-reset" onclick="resetForm()">🔄 Réinitialiser</button>
         </div>
     </div>
-
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Note</th>
-                <th>Actions</th>
+                <th>ID</th><th>Nom</th><th>Prénom</th><th>Note</th><th>Actions</th>
             </tr>
         </thead>
         <tbody id="students-table"></tbody>
     </table>
 </div>
-
 <script>
     function showMessage(msg, type) {
         const el = document.getElementById('message');
@@ -181,13 +131,11 @@ HTML = '''
         el.style.display = 'block';
         setTimeout(() => el.style.display = 'none', 3000);
     }
-
     function getNoteClass(note) {
         if (note >= 14) return 'note-high';
         if (note >= 10) return 'note-mid';
         return 'note-low';
     }
-
     function loadStudents() {
         fetch('/students')
             .then(r => r.json())
@@ -209,21 +157,17 @@ HTML = '''
                 });
             });
     }
-
     function saveStudent() {
         const id = document.getElementById('student-id').value;
         const nom = document.getElementById('nom').value;
         const prenom = document.getElementById('prenom').value;
         const note = parseFloat(document.getElementById('note').value);
-
         if (!nom || !prenom || isNaN(note)) {
             showMessage('⚠️ Remplissez tous les champs !', 'error');
             return;
         }
-
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/students/${id}` : '/students';
-
         fetch(url, {
             method: method,
             headers: {'Content-Type': 'application/json'},
@@ -236,14 +180,12 @@ HTML = '''
             loadStudents();
         });
     }
-
     function editStudent(id, nom, prenom, note) {
         document.getElementById('student-id').value = id;
         document.getElementById('nom').value = nom;
         document.getElementById('prenom').value = prenom;
         document.getElementById('note').value = note;
     }
-
     function deleteStudent(id) {
         if (!confirm('Supprimer cet étudiant ?')) return;
         fetch(`/students/${id}`, {method: 'DELETE'})
@@ -252,14 +194,12 @@ HTML = '''
                 loadStudents();
             });
     }
-
     function resetForm() {
         document.getElementById('student-id').value = '';
         document.getElementById('nom').value = '';
         document.getElementById('prenom').value = '';
         document.getElementById('note').value = '';
     }
-
     loadStudents();
 </script>
 </body>
@@ -269,6 +209,10 @@ HTML = '''
 @app.route('/')
 def home():
     return render_template_string(HTML)
+
+@app.route('/metrics')
+def metrics_endpoint():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 @app.route('/students', methods=['GET'])
 def get_students():
