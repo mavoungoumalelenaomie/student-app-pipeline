@@ -8,6 +8,8 @@ services:
     image: prom/prometheus
     volumes:
       - /opt/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /var/run/docker.sock:/var/run/docker.sock   
+      - /usr/bin/docker:/usr/bin/docker 
     ports:
       - "9092:9090"
   grafana:
