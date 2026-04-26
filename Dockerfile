@@ -8,7 +8,7 @@ WORKDIR /app
 COPY app.py .
 
 # Étape 4 : Installer Flask et prometheus-flask-exporter
-RUN pip install flask prometheus-flask-exporter
+RUN pip install flask prometheus-flask-exporter twilio
 
 # Étape 5 : Exposer le port 5000
 EXPOSE 5000
