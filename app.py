@@ -4,15 +4,23 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from twilio.rest import Client
 
 app = Flask(__name__)
 metrics = PrometheusMetrics(app, path=None)
 
 # ======= CONFIGURATION GMAIL =======
-GMAIL_USER = "keita1999prettydreis@gmail.com"
-GMAIL_PASSWORD = "yque smet hssk gkvz"  # ton nouveau mot de passe d'application
-NOTIFY_EMAIL = "keita1999prettydreis@gmail.com"    # qui reçoit les notifications
+GMAIL_USER = "TON_EMAIL@gmail.com"
+GMAIL_PASSWORD = "TON_MOT_DE_PASSE_APP"
+NOTIFY_EMAIL = "TON_EMAIL@gmail.com"
 # ====================================
+
+# ======= CONFIGURATION TWILIO WHATSAPP =======
+TWILIO_SID = "AC9533a42d18974b6f74173"
+TWILIO_TOKEN = "TON_AUTH_TOKEN"
+TWILIO_WHATSAPP = "whatsapp:+14155238886"
+MON_WHATSAPP = "whatsapp:+24160119014"
+# =============================================
 
 def send_email(subject, body):
     try:
@@ -29,6 +37,18 @@ def send_email(subject, body):
         print(f"✅ Email envoyé : {subject}")
     except Exception as e:
         print(f"❌ Erreur email : {e}")
+
+def send_whatsapp(message):
+    try:
+        client = Client(TWILIO_SID, TWILIO_TOKEN)
+        client.messages.create(
+            body=message,
+            from_=TWILIO_WHATSAPP,
+            to=MON_WHATSAPP
+        )
+        print("✅ WhatsApp envoyé")
+    except Exception as e:
+        print(f"❌ Erreur WhatsApp : {e}")
 
 students = [
     {"id": 1, "nom": "Mvounga", "prenom": "Jean", "note": 15.5},
@@ -258,7 +278,6 @@ def create_student():
     new_id = max(s["id"] for s in students) + 1 if students else 1
     new_student = {"id": new_id, "nom": data["nom"], "prenom": data["prenom"], "note": data["note"]}
     students.append(new_student)
-    # Envoi email
     send_email(
         subject="✅ Nouvel étudiant ajouté — INPTIC",
         body=f"""
@@ -269,6 +288,7 @@ def create_student():
         <p><b>Note:</b> {new_student['note']}/20</p>
         """
     )
+    send_whatsapp(f"✅ Nouvel étudiant ajouté\nNom: {new_student['nom']}\nPrénom: {new_student['prenom']}\nNote: {new_student['note']}/20")
     return jsonify(new_student), 201
 
 @app.route('/students/<int:student_id>', methods=['PUT'])
@@ -282,7 +302,6 @@ def update_student(student_id):
         "prenom": data.get("prenom", student["prenom"]),
         "note": data.get("note", student["note"])
     })
-    # Envoi email
     send_email(
         subject="✏️ Étudiant modifié — INPTIC",
         body=f"""
@@ -293,6 +312,7 @@ def update_student(student_id):
         <p><b>Nouvelle note:</b> {student['note']}/20</p>
         """
     )
+    send_whatsapp(f"✏️ Étudiant modifié\nNom: {student['nom']}\nPrénom: {student['prenom']}\nNote: {student['note']}/20")
     return jsonify(student)
 
 @app.route('/students/<int:student_id>', methods=['DELETE'])
@@ -302,7 +322,6 @@ def delete_student(student_id):
     if not student:
         return jsonify({"error": "Étudiant non trouvé"}), 404
     students = [s for s in students if s["id"] != student_id]
-    # Envoi email
     send_email(
         subject="🗑️ Étudiant supprimé — INPTIC",
         body=f"""
@@ -313,6 +332,7 @@ def delete_student(student_id):
         <p><b>Note:</b> {student['note']}/20</p>
         """
     )
+    send_whatsapp(f"🗑️ Étudiant supprimé\nNom: {student['nom']}\nPrénom: {student['prenom']}")
     return jsonify({"message": f"Étudiant {student_id} supprimé"}), 200
 
 if __name__ == '__main__':
