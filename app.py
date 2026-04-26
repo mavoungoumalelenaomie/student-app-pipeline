@@ -1,9 +1,34 @@
 from flask import Flask, jsonify, request, render_template_string, Response
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 metrics = PrometheusMetrics(app, path=None)
+
+# ======= CONFIGURATION GMAIL =======
+GMAIL_USER = "keita1999prettydreis@gmail.com"
+GMAIL_PASSWORD = "yque smet hssk gkvz"  # ton nouveau mot de passe d'application
+NOTIFY_EMAIL = "keita1999prettydreis@gmail.com"    # qui reçoit les notifications
+# ====================================
+
+def send_email(subject, body):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = GMAIL_USER
+        msg['To'] = NOTIFY_EMAIL
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'html'))
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(GMAIL_USER, GMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        print(f"✅ Email envoyé : {subject}")
+    except Exception as e:
+        print(f"❌ Erreur email : {e}")
 
 students = [
     {"id": 1, "nom": "Mvounga", "prenom": "Jean", "note": 15.5},
@@ -233,6 +258,17 @@ def create_student():
     new_id = max(s["id"] for s in students) + 1 if students else 1
     new_student = {"id": new_id, "nom": data["nom"], "prenom": data["prenom"], "note": data["note"]}
     students.append(new_student)
+    # Envoi email
+    send_email(
+        subject="✅ Nouvel étudiant ajouté — INPTIC",
+        body=f"""
+        <h2 style="color:#9b30ff;">Nouvel étudiant ajouté</h2>
+        <p><b>ID:</b> {new_student['id']}</p>
+        <p><b>Nom:</b> {new_student['nom']}</p>
+        <p><b>Prénom:</b> {new_student['prenom']}</p>
+        <p><b>Note:</b> {new_student['note']}/20</p>
+        """
+    )
     return jsonify(new_student), 201
 
 @app.route('/students/<int:student_id>', methods=['PUT'])
@@ -246,6 +282,17 @@ def update_student(student_id):
         "prenom": data.get("prenom", student["prenom"]),
         "note": data.get("note", student["note"])
     })
+    # Envoi email
+    send_email(
+        subject="✏️ Étudiant modifié — INPTIC",
+        body=f"""
+        <h2 style="color:#a855f7;">Étudiant modifié</h2>
+        <p><b>ID:</b> {student_id}</p>
+        <p><b>Nom:</b> {student['nom']}</p>
+        <p><b>Prénom:</b> {student['prenom']}</p>
+        <p><b>Nouvelle note:</b> {student['note']}/20</p>
+        """
+    )
     return jsonify(student)
 
 @app.route('/students/<int:student_id>', methods=['DELETE'])
@@ -255,6 +302,17 @@ def delete_student(student_id):
     if not student:
         return jsonify({"error": "Étudiant non trouvé"}), 404
     students = [s for s in students if s["id"] != student_id]
+    # Envoi email
+    send_email(
+        subject="🗑️ Étudiant supprimé — INPTIC",
+        body=f"""
+        <h2 style="color:#ff69b4;">Étudiant supprimé</h2>
+        <p><b>ID:</b> {student_id}</p>
+        <p><b>Nom:</b> {student['nom']}</p>
+        <p><b>Prénom:</b> {student['prenom']}</p>
+        <p><b>Note:</b> {student['note']}/20</p>
+        """
+    )
     return jsonify({"message": f"Étudiant {student_id} supprimé"}), 200
 
 if __name__ == '__main__':
