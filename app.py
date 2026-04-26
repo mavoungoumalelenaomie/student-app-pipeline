@@ -10,14 +10,14 @@ app = Flask(__name__)
 metrics = PrometheusMetrics(app, path=None)
 
 # ======= CONFIGURATION GMAIL =======
-GMAIL_USER = "TON_EMAIL@gmail.com"
-GMAIL_PASSWORD = "TON_MOT_DE_PASSE_APP"
-NOTIFY_EMAIL = "TON_EMAIL@gmail.com"
+GMAIL_USER = "keita1999prettydreis@gmail.com"
+GMAIL_PASSWORD = "yque smet hssk gkvz"
+NOTIFY_EMAIL = "keita1999prettydreis@gmail.com"
 # ====================================
 
 # ======= CONFIGURATION TWILIO WHATSAPP =======
 TWILIO_SID = "AC9533a42d18974b6f74173"
-TWILIO_TOKEN = "TON_AUTH_TOKEN"
+TWILIO_TOKEN = "TALRWU1ZF1NNQELJKV2Z1YZK"
 TWILIO_WHATSAPP = "whatsapp:+14155238886"
 MON_WHATSAPP = "whatsapp:+24160119014"
 # =============================================
