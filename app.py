@@ -16,8 +16,8 @@ NOTIFY_EMAIL = "keita1999prettydreis@gmail.com"
 # ====================================
 
 # ======= CONFIGURATION TWILIO WHATSAPP =======
-TWILIO_SID = "AC9533a42d18974b6f74173"
-TWILIO_TOKEN = "TALRWU1ZF1NNQELJKV2Z1YZK"
+TWILIO_SID = "AC9533a42d18974b6f7417324aedd0f0ea"
+TWILIO_TOKEN = "505d2054e496df7be1ae514e196aa439"
 TWILIO_WHATSAPP = "whatsapp:+14155238886"
 MON_WHATSAPP = "whatsapp:+24160119014"
 # =============================================
